@@ -1,0 +1,127 @@
+/* eCXA — style inspiré des principes de design Apple (skill apple-design).
+   Typo système, hiérarchie par poids/taille/interlignage, matériaux légers,
+   retour visuel immédiat à l'appui, respect des préférences d'accessibilité. */
+
+:root {
+  --texte: #1d1d1f;
+  --texte-2: #6e6e73;
+  --fond: #f5f5f7;
+  --carte: rgba(255, 255, 255, 0.85);
+  --bleu: #0071e3;
+  --trait: rgba(0, 0, 0, 0.08);
+  --rayon: 1.25rem;
+}
+
+/* Typographie : police système (SF Pro sur Mac), optical sizing natif */
+html, body, .stApp, .stApp *:not([data-testid="stIconMaterial"]) {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+}
+.stApp { background: var(--fond); color: var(--texte); }
+[data-testid="stMainBlockContainer"] { padding-top: 4.5rem; max-width: 1320px; }
+
+h1 { font-size: clamp(2.25rem, 4vw, 3rem) !important; font-weight: 700 !important;
+     line-height: 1.05 !important; letter-spacing: -0.025em !important; padding-bottom: 0 !important; }
+h3 { font-size: 1.15rem !important; font-weight: 600 !important; letter-spacing: -0.01em !important;
+     padding: 0 !important; margin: 0 !important; }
+.sous-titre { color: var(--texte-2); font-size: 1rem; line-height: 1.35; letter-spacing: -0.005em; margin: .35rem 0 .25rem; white-space: nowrap; }
+h1 { margin: 0 !important; }
+[data-testid="stWidgetLabel"] p {
+  color: var(--texte-2) !important; font-size: 0.78rem !important; font-weight: 500 !important;
+  letter-spacing: 0.02em; text-transform: uppercase;
+}
+
+/* Cartes : matériau clair ; plus la surface est grande, plus l'ombre est profonde */
+[class*="st-key-carte"] {
+  background: var(--carte);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--trait) !important;
+  border-radius: var(--rayon) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  padding: 1.25rem 1.25rem 1rem !important;
+}
+.carte-titre { display: flex; align-items: baseline; justify-content: space-between; }
+.carte-titre span { font-size: 1.15rem; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* Articulation : l'image remplace le nom */
+.articulation { display: flex; flex-direction: column; align-items: center; gap: .35rem; }
+.articulation img { height: 120px; width: auto; border-radius: .6rem; display: block;
+  box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.norme { color: var(--texte-2); font-size: .8rem; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.score-art { text-align: center; }
+.score-art b { font-size: 1.05rem; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.barre { height: 4px; border-radius: 2px; background: rgba(0,0,0,.07); overflow: hidden; margin: 5px auto 0; }
+.barre > i { display: block; height: 100%; border-radius: 2px; transition: width 300ms cubic-bezier(.2,.8,.2,1); }
+[data-testid="stNumberInputStepDown"], [data-testid="stNumberInputStepUp"],
+[data-testid="stNumberInputClearButton"] { display: none !important; }
+[data-testid="stNumberInputField"] { text-align: center; font-variant-numeric: tabular-nums; font-weight: 500; }
+
+/* Radars SVG (images) */
+.radar { width: 100%; height: auto; display: block; }
+
+/* Carte du score global, qui reste visible en défilant */
+/* Colonnes de même hauteur : la colonne gauche (titre, patient, date, score)
+   s'étire jusqu'au bas des cartes MS / MI, et inversement */
+[data-testid="stHorizontalBlock"]:has(.st-key-panneau) > [data-testid="stColumn"] {
+  display: flex; flex-direction: column; align-self: stretch;
+}
+[data-testid="stHorizontalBlock"]:has(.st-key-panneau) > [data-testid="stColumn"] > [data-testid="stVerticalBlock"],
+[data-testid="stLayoutWrapper"]:has(> .st-key-panneau), .st-key-panneau,
+[data-testid="stLayoutWrapper"]:has(> .st-key-carte_score), .st-key-carte_score,
+[data-testid="stLayoutWrapper"]:has(> .st-key-carte_mi), .st-key-carte_mi { flex: 1 1 auto; }
+/* Dans la carte score, la jauge et les sous-scores occupent l'espace libre, centrés */
+.st-key-carte_score > [data-testid="stElementContainer"]:first-child {
+  flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center;
+}
+.st-key-carte_score { margin-top: .5rem; }
+.score-titre { text-align: center; color: var(--texte-2); font-size: .8rem; font-weight: 500;
+  letter-spacing: .02em; text-transform: uppercase; }
+.jauge { width: 128px; height: 128px; display: block; margin: .15rem auto 0; }
+.jauge-libelle { text-align: center; font-weight: 600; font-size: .95rem; margin: .1rem 0 .7rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.puces { display: flex; flex-direction: column; gap: .35rem; margin-bottom: .6rem; }
+.puce { display: flex; align-items: center; gap: .5rem; font-size: .88rem; padding: .35rem .7rem;
+  background: rgba(0,0,0,.035); border-radius: .7rem; }
+.puce b { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 650; }
+.point { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.legende { display: flex; flex-wrap: wrap; gap: .3rem .8rem; justify-content: center; font-size: .72rem;
+  color: var(--texte-2); margin-bottom: .4rem; }
+.legende i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: .3rem; }
+
+[data-testid="stMetricValue"] { font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+[data-testid="stNumberInputContainer"], [data-testid="stTextInputRootElement"], [data-testid="stDateInputField"] {
+  border-radius: .7rem !important;
+}
+
+/* Boutons : retour immédiat à l'appui (pointer-down), pas au relâchement */
+button { transition: transform 100ms ease-out, background-color 150ms ease, box-shadow 150ms ease !important; }
+button:active { transform: scale(0.97); }
+[data-testid="stBaseButton-primary"], [data-testid="stBaseButton-secondary"] {
+  border-radius: 980px !important; font-weight: 500 !important; min-height: 2.6rem;
+}
+[data-testid="stBaseButton-primary"] { background: var(--bleu) !important; border-color: var(--bleu) !important; }
+[data-testid="stBaseButton-primary"]:hover { background: #0077ed !important; }
+
+/* En-tête Streamlit : couche translucide plutôt qu'une bande opaque */
+[data-testid="stHeader"] { background: rgba(245,245,247,.72);
+  -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); }
+
+[data-testid="stExpander"] details, [data-testid="stDataFrame"] { border-radius: 1rem !important; }
+hr { border-color: var(--trait) !important; }
+
+/* Écrans étroits : la carte score ne colle plus */
+
+/* Accessibilité */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; }
+  button:active { transform: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  [class*="st-key-carte"], [data-testid="stHeader"] { background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  [class*="st-key-carte"] { background: #fff; border: 1px solid #6e6e73 !important; }
+  :root { --texte-2: #3a3a3c; }
+}

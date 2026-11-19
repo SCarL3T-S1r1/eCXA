@@ -1,0 +1,10 @@
+[project]
+name = "ecxa"
+version = "0.1.0"
+description = "Calcul du score eCXA (amplitudes articulaires MS/MI) avec Streamlit"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "openpyxl>=3.1.5",
+    "streamlit>=1.67.0",
+]
