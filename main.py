@@ -30,6 +30,10 @@ COLONNES = ["Date", "Name", "Epaule_XA", "Coude_XA", "Poignet_XA", "Main_XA",
 MS = {"Epaule": 180, "Coude": 150, "Poignet": 180, "Main": 180}
 MI = {"Hanche": 150, "Genou": 180, "Cheville": 120}
 NORMES = MS | MI
+# Scores ajoutés en fin de ligne dans l'Excel (en %, cellule vide si une mesure manque)
+SCORES = {"eCXA_MS": MS, "eCXA_MI": MI, "eCXA": NORMES}
+ENTETES = COLONNES + list(SCORES)
+FORMAT_PCT = '0" %"'
 
 # Ordre et orientation des axes repris de radar_plot_eCXA_MS / _MI (theta_offset)
 RADAR_MS = (["Epaule", "Main", "Poignet", "Coude"], 135)
@@ -72,15 +76,37 @@ def init_fichier() -> None:
     FICHIER.parent.mkdir(parents=True, exist_ok=True)
     if not FICHIER.exists():
         wb = Workbook()
-        wb.active.append(COLONNES)
+        wb.active.append(ENTETES)
         wb.save(FICHIER)
+
+
+def scores_ligne(valeurs: dict) -> list[int | None]:
+    return [score_groupe(valeurs, groupe) for groupe in SCORES.values()]
+
+
+def mettre_a_niveau(ws) -> None:
+    """Fichier d'une version précédente (9 colonnes) : ajoute les colonnes de score
+    et les calcule pour les lignes existantes."""
+    if [c.value for c in ws[1]][:len(ENTETES)] == ENTETES:
+        return
+    debut = len(COLONNES) + 1
+    for i, nom in enumerate(SCORES):
+        ws.cell(row=1, column=debut + i, value=nom)
+    for ligne in ws.iter_rows(min_row=2):
+        valeurs = {}
+        for i, art in enumerate(NORMES):
+            v = ligne[2 + i].value
+            valeurs[art] = v if isinstance(v, (int, float)) else None
+        for i, score in enumerate(scores_ligne(valeurs)):
+            ws.cell(row=ligne[0].row, column=debut + i, value=score).number_format = FORMAT_PCT
 
 
 @st.cache_data(show_spinner=False)
 def lire_historique(_chemin: str, mtime: float) -> pd.DataFrame:
-    """Relu seulement quand le fichier change (mtime dans la clé du cache)."""
-    df = pd.read_excel(_chemin)
-    for groupe, nom in [(MS, "eCXA_MS %"), (MI, "eCXA_MI %"), (NORMES, "eCXA %")]:
+    """Relu seulement quand le fichier change (mtime dans la clé du cache).
+    Les scores sont recalculés depuis les mesures (fiable même si l'Excel a été retouché)."""
+    df = pd.read_excel(_chemin).reindex(columns=COLONNES)
+    for nom, groupe in SCORES.items():
         plafonne = sum(df[f"{a}_XA"].clip(upper=n) for a, n in groupe.items())
         df[nom] = (plafonne / sum(groupe.values()) * 100).round()  # NaN si une mesure manque
     return df
@@ -262,8 +288,12 @@ def zone_mesure() -> None:
                 st.error("Aucune mesure saisie.")
             else:
                 wb = openpyxl.load_workbook(FICHIER)
-                wb.active.append([jour.strftime("%d/%m/%Y"), nom.strip(),
-                                  *(valeurs[a] for a in NORMES)])
+                ws = wb.active
+                mettre_a_niveau(ws)
+                ws.append([jour.strftime("%d/%m/%Y"), nom.strip(),
+                           *(valeurs[a] for a in NORMES), *scores_ligne(valeurs)])
+                for cellule in ws[ws.max_row][len(COLONNES):len(ENTETES)]:
+                    cellule.number_format = FORMAT_PCT
                 wb.save(FICHIER)
                 st.session_state["message"] = f"Mesures de {nom.strip()} enregistrées"
                 st.rerun()  # rafraîchit aussi l'historique
@@ -296,10 +326,13 @@ st.subheader(f"Historique ({len(df)} enregistrement{'s' if len(df) > 1 else ''})
 if df.empty:
     st.caption("Aucune donnée enregistrée pour l'instant.")
 else:
-    pourcent = {c: st.column_config.ProgressColumn(c.replace(" %", ""), min_value=0, max_value=100,
-                                                   format="%d %%")
-                for c in ["eCXA_MS %", "eCXA_MI %", "eCXA %"]}
-    st.dataframe(df, hide_index=True, use_container_width=True, column_config=pourcent)
+    pourcent = {c: st.column_config.ProgressColumn(c, min_value=0, max_value=100, format="%d %%")
+                for c in SCORES}
+    affiche = df.copy()
+    mesures = [f"{a}_XA" for a in NORMES]
+    affiche[mesures] = df[mesures].map(lambda v: "—" if pd.isna(v) else f"{v:.0f}")  # pas de « None »
+    colonnes = pourcent | {m: st.column_config.TextColumn(m, alignment="right") for m in mesures}
+    st.dataframe(affiche, hide_index=True, use_container_width=True, column_config=colonnes)
     st.download_button("Télécharger eCXA.xlsx", FICHIER.read_bytes(), "eCXA.xlsx",
                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
@@ -313,5 +346,7 @@ with st.expander("Importer un eCXA.xlsx existant (remplace l'historique)"):
         if entetes[:len(COLONNES)] != COLONNES:
             st.error(f"Colonnes inattendues. Attendu : {', '.join(COLONNES)}")
         else:
-            FICHIER.write_bytes(fichier.getvalue())
+            wb = openpyxl.load_workbook(fichier)
+            mettre_a_niveau(wb.active)  # ajoute les scores si le fichier est d'une ancienne version
+            wb.save(FICHIER)
             st.rerun()

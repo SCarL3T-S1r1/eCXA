@@ -10,6 +10,8 @@ cheville), scores en % de la norme, radars MS/MI, score global, et enregistremen
 - Scores plafonnés à 100 %. Couleur selon la gravité (plus le score est bas, plus c'est grave) :
   ≥ 90 normal (vert), ≥ 75 léger (jaune), ≥ 50 modéré (orange), < 50 sévère (rouge).
   Seuils modifiables dans `SEUILS` (main.py).
+- L'Excel contient aussi les scores `eCXA_MS`, `eCXA_MI` et `eCXA` (en %) en fin de ligne. Un fichier
+  d'une ancienne version (9 colonnes) est complété automatiquement au premier enregistrement ou à l'import.
 - Une mesure vide n'est pas comptée comme 0 : le score du membre s'affiche quand toutes ses
   articulations sont saisies. Les cases vides restent vides dans l'Excel.
 - Radars dessinés en SVG (même ordre et orientation des axes que `radar_plot_eCXA_MS/MI.py`,
